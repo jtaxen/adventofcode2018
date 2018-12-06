@@ -2,48 +2,64 @@
   (:gen-class))
 
 (defn readLines []
-  (with-open [rdr (clojure.java.io/reader "input.txt")]
-    (reduce conj [] (line-seq rdr))))
+  (sort < (with-open [rdr (clojure.java.io/reader "input.txt")]
+            (reduce conj [] (line-seq rdr)))))
 
-(def instructions (sort (readLines)))
+(defn getGuardList
+  [instructions]
+  (->> (map (fn [s]
+              (let [match (re-find #"Guard #(\d+)" s)]
+                (if (some? match)
+                  (Integer. (last match))
+                  nil)))
+            instructions)
+       (filter #(some? %))
+       (distinct)
+       (sort <)))
 
-(defn splitString [s g]
-  (let [dateTime (re-find #"(\d{4}(-\d{2}){2})\s(\d{2}:\d{2})" s)
-        date (second dateTime)
-        dTime (last dateTime)
-        minute (Integer. (second (clojure.string/split dTime #":")))
-        guard (second (re-find #"Guard #(\d+) begins shift" s))
-        fallsAsleep (some? (re-find #"falls asleep" s))
-        wakesUp (some? (re-find #"wakes up" s))]
-    {:guard (if (some? guard) (Integer. guard) g)
-     :minute minute
-     :fallsAsleep fallsAsleep
-     :wakesUp wakesUp}))
+(defn getMinutes [s]
+  (println "here")
+  (Integer. (second (re-find #"\d{2}:(\d{2})" s))))
 
-(defn readInstructions [s]
-  (let [firstGuard (:guard (splitString (first s) -1))]
-    (loop [ln s
-           guard firstGuard
-           results '()]
-      (if (empty? ln)
-        results
-        (let [currentLine (splitString (first ln) firstGuard)
-              currentGuard (:guard currentLine)]
-          (recur (rest ln)
-                 currentGuard
-                 (conj results currentLine)))))))
+(defn updateSchedule
+  [schedule guard fallsAsleep wakesUp]
+  (println "there")
+  (aset schedule guard (let [sch (nth schedule guard)]
+                         (loop [sched sch
+                                index (- fallsAsleep 1)]
+                           (if (= wakesUp index)
+                             sched
+                             (do
+                               (aset sched index (+ (aget sched index) 1))
+                               (recur sched (+ index 1))))))))
 
-(def sortedInstructions
-  (readInstructions instructions))
-
-(def guardList
-  (distinct (map #(:guard %) sortedInstructions)))
-
-(def countSleepingMinutes
-  [glist instList]
-  (loop [il instList]
-    (let [inst (first il)]
-      (
+(defn getSleepSchedule
+  [instructions guards]
+  (let [schedule (make-array Integer/TYPE (count guards) 60)]
+    (loop [inst instructions
+           sched schedule
+           guardId 0
+           fallsAsleep 0]
+      (println (count inst))
+      (let [currentInst (first inst)
+            reGuardId (re-find #"Guard #(\d+)" currentInst)]
+        (cond
+          (nil? inst) sched
+          (some? reGuardId)
+          (recur (rest inst)
+                 sched
+                 (Integer. (second reGuardId))
+                 fallsAsleep)
+          (clojure.string/includes? currentInst "falls asleep")
+          (recur (rest inst)
+                 sched
+                 guardId
+                 (getMinutes currentInst))
+          (clojure.string/includes? currentInst "wakes up")
+          (recur (rest inst)
+                 (updateSchedule sched guardId fallsAsleep (getMinutes currentInst))
+                 guardId
+                 fallsAsleep))))))
 
 
 

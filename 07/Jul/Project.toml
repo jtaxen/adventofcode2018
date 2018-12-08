@@ -1,0 +1,7 @@
+name = "jul"
+uuid = "15daf310-f9f5-11e8-1c13-076d669e96ba"
+authors = ["Jacob Taxén <jacob.taxen@live.com>"]
+version = "0.1.0"
+
+[deps]
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"

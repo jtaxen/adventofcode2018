@@ -1,0 +1,6 @@
+authors = ["Jacob Taxén <jacob.taxen@live.com>"]
+name = "aoc06"
+uuid = "2246fe9c-f940-11e8-2ae9-f55db3924449"
+version = "0.1.0"
+
+[deps]
